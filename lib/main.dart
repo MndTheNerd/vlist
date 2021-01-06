@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
-
 // Import the firebase_core plugin
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/material.dart';
+import 'package:vlist/services/auth.dart';
+
+import 'screens/home.dart';
+import 'screens/login.dart';
 
 void main() {
   runApp(MyApp());
@@ -15,31 +18,34 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder(
-      // Initialize FlutterFire:
-      future: _initialization,
-      builder: (context, snapshot) {
-        // Check for errors
-        if (snapshot.hasError) {
-          return Scaffold(
+    return MaterialApp(
+      theme: ThemeData.dark(),
+      home: FutureBuilder(
+        // Initialize FlutterFire:
+        future: _initialization,
+        builder: (context, snapshot) {
+          // Check for errors
+          if (snapshot.hasError) {
+            return const Scaffold(
+              body: Center(
+                child: Text('Error'),
+              ),
+            );
+          }
+
+          // Once complete, show your application
+          if (snapshot.connectionState == ConnectionState.done) {
+            return Root();
+          }
+
+          // Otherwise, show something whilst waiting for initialization to complete
+          return const Scaffold(
             body: Center(
-              child: Text('Error'),
+              child: Text('loading'),
             ),
           );
-        }
-
-        // Once complete, show your application
-        if (snapshot.connectionState == ConnectionState.done) {
-          return Root();
-        }
-
-        // Otherwise, show something whilst waiting for initialization to complete
-        return Scaffold(
-          body: Center(
-            child: Text('loading'),
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }
@@ -55,6 +61,28 @@ class _RootState extends State<Root> {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder(stream: , //Auth);
+    return StreamBuilder(
+      stream: Auth(auth: _auth).user,
+      builder: (BuildContext context, AsyncSnapshot<User> snapshot) {
+        if (snapshot.connectionState == ConnectionState.active) {
+          if (snapshot.data.uid == null) {
+            //login screen
+            return Login(auth: _auth, firestore: _firestore);
+          } else {
+            //home screen
+            return Home(
+              auth: _auth,
+              firestore: _firestore,
+            );
+          }
+        } else {
+          return const Scaffold(
+            body: Center(
+              child: Text('loading...'),
+            ),
+          );
+        }
+      },
+    );
   }
 }
